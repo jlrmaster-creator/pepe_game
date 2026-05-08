@@ -64,7 +64,7 @@
     position: absolute;
     width: 100%;
     text-align: center;
-    top: 42%;
+    top: 40%;
     left: 0;
     color: white;
     pointer-events: none;
@@ -132,43 +132,50 @@
     pointer-events: auto;
   }
 
-  /* Mobile controls */
+  #credits {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    pointer-events: none;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    letter-spacing: 0.5px;
+  }
+
   #mobileControls {
     position: absolute;
-    bottom: 10px;
+    bottom: 12px;
     left: 0;
     width: 100%;
     display: none;
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 14px;
     pointer-events: none;
     z-index: 10;
   }
 
   #mobileControls button {
     pointer-events: auto;
-    width: 60px;
-    height: 60px;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
     padding: 0;
-    font-size: 28px;
+    font-size: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(180deg, rgba(226,183,20,0.85), rgba(196,154,10,0.85));
+    background: linear-gradient(180deg, rgba(226,183,20,0.9), rgba(196,154,10,0.9));
     border: 2px solid rgba(160,125,10,0.8);
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     backdrop-filter: blur(4px);
   }
 
   #mobileControls button:active {
-    transform: scale(0.9);
-  }
-
-  #mobileControls button.pauseBtn {
-    font-size: 22px;
-    width: 50px;
-    height: 50px;
+    transform: scale(0.88);
   }
 
   @media (hover: none) and (pointer: coarse) {
@@ -199,7 +206,7 @@
     <div id="pauseHint">P ↵ Pausa</div>
 
     <div id="mobileControls">
-      <button class="pauseBtn" id="mobilePauseBtn" onclick="togglePause()">⏸</button>
+      <button id="mobilePauseBtn">⏸</button>
       <button id="mobileJumpBtn">▲</button>
     </div>
 
@@ -214,6 +221,8 @@
       <p id="finalScore"></p>
       <button onclick="restartGame()">Reintentar</button>
     </div>
+
+    <div id="credits">Created by: José López-Romero Moraleda</div>
   </div>
 </div>
 
@@ -267,92 +276,41 @@ for (let i = 0; i < 5; i++) {
 
 // ====================== AUDIO ======================
 let audioCtx = null;
-let musicGain = null;
-let sfxGain = null;
 
 function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  musicGain = audioCtx.createGain();
-  musicGain.gain.value = 1;
-  musicGain.connect(audioCtx.destination);
-  sfxGain = audioCtx.createGain();
-  sfxGain.gain.value = 1;
-  sfxGain.connect(audioCtx.destination);
 }
 
-function duckMusic() {
-  if (musicGain) musicGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
-}
-
-function restoreMusic() {
-  if (musicGain) musicGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
-}
-
-function playNote(freq, duration, type, gainVal, startTime, isSfx) {
+function playTone(freq, duration, type, volume, startTime) {
+  if (!audioCtx) return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type || "square";
   osc.frequency.setValueAtTime(freq, startTime);
-  osc.frequency.linearRampToValueAtTime(freq * 1.02, startTime + duration * 0.1);
-  osc.frequency.linearRampToValueAtTime(freq * 0.98, startTime + duration * 0.8);
-  gain.gain.setValueAtTime(gainVal || 0.1, startTime);
-  gain.gain.linearRampToValueAtTime(gainVal * 0.8, startTime + duration * 0.7);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  gain.gain.setValueAtTime(volume || 0.1, startTime);
+  gain.gain.linearRampToValueAtTime(0, startTime + duration);
   osc.connect(gain);
-  gain.connect(isSfx ? sfxGain : musicGain);
+  gain.connect(audioCtx.destination);
   osc.start(startTime);
   osc.stop(startTime + duration);
 }
 
-function playNoise(duration, gainVal, startTime, isSfx) {
+function playNoise(duration, volume, startTime) {
+  if (!audioCtx) return;
   const bufferSize = audioCtx.sampleRate * duration;
   const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
   const source = audioCtx.createBufferSource();
   source.buffer = buffer;
   const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(gainVal, startTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  gain.gain.setValueAtTime(volume, startTime);
+  gain.gain.linearRampToValueAtTime(0, startTime + duration);
   source.connect(gain);
-  gain.connect(isSfx ? sfxGain : musicGain);
+  gain.connect(audioCtx.destination);
   source.start(startTime);
   source.stop(startTime + duration);
-}
-
-function playVoice(text, speed, gainVal) {
-  if (!audioCtx) return;
-  speed = speed || 0.12;
-  gainVal = gainVal || 0.08;
-  const now = audioCtx.currentTime;
-
-  const vowelFreq = c => {
-    const ch = c.toLowerCase();
-    if ("aeiouáéíóú".includes(ch)) {
-      const map = { a: 520, á: 550, e: 640, é: 670, i: 760, í: 790, o: 440, ó: 470, u: 350, ú: 370 };
-      return map[ch] || 500;
-    }
-    if (c === " ") return 0;
-    return -1;
-  };
-
-  let t = now;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const f = vowelFreq(ch);
-    if (f > 0) {
-      playNote(f + Math.random() * 10, speed * 1.2, "square", gainVal, t, true);
-      t += speed * 0.9;
-    } else if (f === -1) {
-      playNoise(speed * 0.3, gainVal * 1.5, t, true);
-      t += speed * 0.3;
-    } else {
-      t += speed * 0.4;
-    }
-  }
 }
 
 function playArcadeMusic() {
@@ -360,21 +318,18 @@ function playArcadeMusic() {
   const bpm = 165;
   const beat = 60 / bpm;
   const loopLen = 16;
-
   const melody = [
     784, 880, 988, 880, 784, 880, 1047, 988,
     880, 784, 880, 988, 1047, 988, 880, 784,
     659, 784, 880, 784, 659, 784, 880, 988,
     1047, 988, 880, 784, 659, 784, 880, 784
   ];
-
   const bass = [
     165, 165, 196, 196, 220, 220, 262, 262,
     165, 165, 196, 196, 220, 220, 262, 262,
     131, 131, 165, 165, 196, 196, 220, 220,
     131, 131, 165, 165, 196, 196, 220, 220
   ];
-
   const arp = [
     523, 659, 784, 880, 784, 659, 523, 440,
     523, 659, 784, 880, 784, 659, 523, 440,
@@ -385,18 +340,15 @@ function playArcadeMusic() {
   const now = audioCtx.currentTime;
   for (let i = 0; i < loopLen; i++) {
     const t = now + i * beat;
-    playNote(melody[i], beat * 0.85, "square", 0.05, t, false);
-    playNote(bass[i], beat * 0.9, "triangle", 0.07, t, false);
-    if (i % 2 === 0) {
-      playNote(arp[i] * 2, beat * 0.3, "square", 0.02, t + beat * 0.5, false);
-    }
+    playTone(melody[i], beat * 0.85, "square", 0.05, t);
+    playTone(bass[i], beat * 0.9, "triangle", 0.07, t);
+    if (i % 2 === 0) playTone(arp[i] * 2, beat * 0.3, "square", 0.02, t + beat * 0.5);
   }
-
-  const nextStart = now + loopLen * beat - 0.05;
-  musicTimer = setTimeout(playArcadeMusic, nextStart * 1000 - audioCtx.currentTime * 1000);
+  musicTimer = setTimeout(playArcadeMusic, (loopLen * beat - 0.02) * 1000);
 }
 
 let musicTimer = null;
+let voiceTimer = null;
 
 function startMusic() {
   initAudio();
@@ -405,61 +357,74 @@ function startMusic() {
 }
 
 function stopMusic() {
-  if (musicTimer) {
-    clearTimeout(musicTimer);
-    musicTimer = null;
-  }
+  if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
+  if (voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; }
 }
 
 function playCollectSound() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
-  duckMusic();
+  stopMusic();
+
   const now = audioCtx.currentTime;
-  playNote(580, 0.14, "square", 0.25, now, true);
-  playNoise(0.05, 0.20, now + 0.14, true);
-  playNote(720, 0.12, "square", 0.25, now + 0.18, true);
-  playNoise(0.04, 0.16, now + 0.32, true);
-  playNote(660, 0.10, "square", 0.22, now + 0.35, true);
-  playNote(540, 0.14, "square", 0.25, now + 0.46, true);
-  playNote(630, 0.10, "square", 0.25, now + 0.62, true);
-  playNoise(0.05, 0.20, now + 0.73, true);
-  playNote(440, 0.12, "square", 0.22, now + 0.78, true);
-  playNote(520, 0.08, "square", 0.25, now + 0.92, true);
-  playNote(880, 0.20, "square", 0.28, now + 1.02, true);
-  playNote(1100, 0.10, "sawtooth", 0.18, now + 1.06, true);
-  setTimeout(restoreMusic, 1300);
+  // "AHÍ"
+  playTone(580, 0.12, "square", 0.20, now);
+  playNoise(0.04, 0.15, now + 0.12);
+  playTone(720, 0.12, "square", 0.20, now + 0.16);
+  // "ESTÁ"
+  playNoise(0.03, 0.12, now + 0.30);
+  playTone(660, 0.10, "square", 0.18, now + 0.33);
+  playTone(540, 0.12, "square", 0.20, now + 0.44);
+  // "MA"
+  playTone(630, 0.10, "square", 0.20, now + 0.60);
+  // "CHO"
+  playNoise(0.04, 0.15, now + 0.70);
+  playTone(440, 0.12, "square", 0.18, now + 0.75);
+  // "TE!!"
+  playTone(520, 0.08, "square", 0.20, now + 0.88);
+  playTone(880, 0.18, "square", 0.25, now + 0.98);
+  playTone(1100, 0.10, "sawtooth", 0.15, now + 1.02);
+
+  voiceTimer = setTimeout(startMusic, 1300);
 }
 
 function playGameOverSound() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
-  duckMusic();
+  stopMusic();
+
   const now = audioCtx.currentTime;
-  playNote(780, 0.14, "square", 0.25, now, true);
-  playNote(660, 0.10, "square", 0.22, now + 0.15, true);
-  playNoise(0.05, 0.18, now + 0.28, true);
-  playNote(710, 0.10, "square", 0.22, now + 0.33, true);
-  playNote(590, 0.08, "square", 0.22, now + 0.44, true);
-  playNote(520, 0.12, "square", 0.25, now + 0.54, true);
-  playNote(580, 0.10, "square", 0.22, now + 0.70, true);
-  playNote(640, 0.10, "square", 0.22, now + 0.82, true);
-  playNote(580, 0.08, "square", 0.22, now + 0.94, true);
-  playNote(490, 0.12, "square", 0.25, now + 1.04, true);
-  playNoise(0.04, 0.16, now + 1.22, true);
-  playNote(440, 0.10, "square", 0.22, now + 1.26, true);
-  playNote(520, 0.10, "square", 0.22, now + 1.38, true);
-  playNoise(0.04, 0.16, now + 1.52, true);
-  playNote(660, 0.10, "square", 0.22, now + 1.56, true);
-  playNote(580, 0.08, "square", 0.22, now + 1.68, true);
-  playNote(490, 0.08, "square", 0.22, now + 1.78, true);
-  playNote(740, 0.08, "square", 0.22, now + 1.88, true);
-  playNote(440, 0.08, "square", 0.22, now + 1.98, true);
-  playNote(330, 0.10, "square", 0.22, now + 2.08, true);
-  playNote(880, 0.15, "sawtooth", 0.20, now + 2.12, true);
-  playNote(1100, 0.20, "sawtooth", 0.18, now + 2.20, true);
-  playNote(1047, 0.10, "triangle", 0.22, now + 2.35, true);
-  playNote(1319, 0.50, "triangle", 0.28, now + 2.45, true);
+  // "BIEN"
+  playTone(780, 0.12, "square", 0.20, now);
+  playTone(660, 0.10, "square", 0.18, now + 0.14);
+  // "JUGA"
+  playNoise(0.04, 0.14, now + 0.26);
+  playTone(710, 0.10, "square", 0.18, now + 0.30);
+  playTone(590, 0.08, "square", 0.18, now + 0.42);
+  // "DO"
+  playTone(520, 0.12, "square", 0.20, now + 0.52);
+  // "BONITO"
+  playTone(580, 0.10, "square", 0.18, now + 0.66);
+  playTone(640, 0.10, "square", 0.18, now + 0.78);
+  playTone(580, 0.08, "square", 0.18, now + 0.90);
+  playTone(490, 0.12, "square", 0.20, now + 1.00);
+  // "ALA"
+  playNoise(0.03, 0.12, now + 1.16);
+  playTone(440, 0.10, "square", 0.18, now + 1.20);
+  playTone(520, 0.10, "square", 0.18, now + 1.32);
+  // "A TRABAJAR!!"
+  playNoise(0.03, 0.12, now + 1.46);
+  playTone(660, 0.10, "square", 0.18, now + 1.50);
+  playTone(580, 0.08, "square", 0.18, now + 1.62);
+  playTone(490, 0.08, "square", 0.18, now + 1.72);
+  playTone(740, 0.08, "square", 0.18, now + 1.82);
+  playTone(440, 0.08, "square", 0.18, now + 1.92);
+  playTone(330, 0.10, "square", 0.18, now + 2.02);
+  // Final fanfare
+  playTone(880, 0.12, "sawtooth", 0.18, now + 2.12);
+  playTone(1100, 0.18, "sawtooth", 0.16, now + 2.20);
+  playTone(1047, 0.10, "triangle", 0.20, now + 2.32);
+  playTone(1319, 0.50, "triangle", 0.25, now + 2.42);
 }
 
 // ====================== CONTROLS ======================
@@ -469,14 +434,12 @@ document.addEventListener("keydown", e => {
 });
 canvas.addEventListener("click", jump);
 
-// Mobile jump button
 document.getElementById("mobileJumpBtn").addEventListener("click", jump);
 document.getElementById("mobileJumpBtn").addEventListener("touchstart", e => {
   e.preventDefault();
   jump();
 });
-
-// Mobile pause button touch support
+document.getElementById("mobilePauseBtn").addEventListener("click", togglePause);
 document.getElementById("mobilePauseBtn").addEventListener("touchstart", e => {
   e.preventDefault();
   togglePause();
@@ -513,7 +476,7 @@ function loop() {
 
 function spawnCollectible(x, y) {
   const type = Math.random() < 0.5 ? "coin" : "ham";
-  collectibles.push({ x, y, type, r: 9, collected: false });
+  collectibles.push({ x, y, type, r: 10, collected: false });
 }
 
 function update() {
@@ -736,7 +699,7 @@ function draw() {
   }
   ctx.restore();
 
-  // --- HUD: Score & Level ---
+  // HUD: Score & Level
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.beginPath();
   ctx.roundRect(8, 8, 180, 58, 8);
@@ -754,7 +717,7 @@ function draw() {
   ctx.fillStyle = "#a0d8ff";
   ctx.fillText("📊 Nivel: " + level, 18, 40);
 
-  // --- HUD: Life bar ---
+  // HUD: Life bar
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.beginPath();
   ctx.roundRect(canvas.width - 138, 8, 130, 38, 8);
@@ -784,7 +747,7 @@ function draw() {
   ctx.roundRect(barX, barY, barW * (player.life / 100), barH, 4);
   ctx.fill();
 
-  // --- Level-up notification ---
+  // Level-up notification
   if (levelUpFrames > 0) {
     levelUpFrames--;
     const alpha = Math.min(1, levelUpFrames / 20);
@@ -793,40 +756,35 @@ function draw() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("⬆ NIVEL " + level + "!", canvas.width / 2, canvas.height / 2 - 50);
-
     ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
     ctx.font = "16px Arial";
     ctx.fillText("Velocidad aumentada", canvas.width / 2, canvas.height / 2 - 16);
   }
 
-  // --- Start countdown ---
+  // Start countdown
   if (gameRunning && startDelay > 0) {
     const seconds = Math.ceil(startDelay / 60);
     ctx.fillStyle = `rgba(0,0,0,${Math.min(0.5, (120 - startDelay) / 120)})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = "#fff";
     ctx.font = "bold 48px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(seconds, canvas.width / 2, canvas.height / 2);
-
     ctx.font = "18px Arial";
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.fillText("¡Prepárate!", canvas.width / 2, canvas.height / 2 + 50);
   }
 
-  // --- Pause overlay ---
+  // Pause overlay
   if (paused) {
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = "#ffd700";
     ctx.font = "bold 44px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("⏸ PAUSA", canvas.width / 2, canvas.height / 2 - 20);
-
     ctx.fillStyle = "rgba(255,255,255,0.6)";
     ctx.font = "16px Arial";
     ctx.fillText("Pulsa P o ESC para reanudar", canvas.width / 2, canvas.height / 2 + 40);
