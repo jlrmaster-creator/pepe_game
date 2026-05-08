@@ -220,6 +220,7 @@
       <h1>Game Over</h1>
       <p id="finalScore"></p>
       <button onclick="restartGame()">Reintentar</button>
+      <p style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:20px;pointer-events:auto;">Created by: José López-Romero Moraleda</p>
     </div>
 
     <div id="credits">Created by: José López-Romero Moraleda</div>
@@ -276,48 +277,69 @@ for (let i = 0; i < 5; i++) {
 
 // ====================== AUDIO ======================
 let audioCtx = null;
+let musicGain = null;
+let musicTids = [];
 
 function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 1;
+  musicGain.connect(audioCtx.destination);
 }
 
-function playTone(freq, duration, type, volume, startTime) {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type || "square";
-  osc.frequency.setValueAtTime(freq, startTime);
-  gain.gain.setValueAtTime(volume || 0.1, startTime);
-  gain.gain.linearRampToValueAtTime(0, startTime + duration);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start(startTime);
-  osc.stop(startTime + duration);
+function killMusic() {
+  musicTids.forEach(t => clearTimeout(t));
+  musicTids = [];
+  if (musicGain) musicGain.gain.value = 0;
 }
 
-function playNoise(duration, volume, startTime) {
+function restartMusicGain() {
+  if (musicGain) musicGain.gain.value = 1;
+}
+
+function playTone(freq, dur, type, vol, delay) {
   if (!audioCtx) return;
-  const bufferSize = audioCtx.sampleRate * duration;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-  const source = audioCtx.createBufferSource();
-  source.buffer = buffer;
-  const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(volume, startTime);
-  gain.gain.linearRampToValueAtTime(0, startTime + duration);
-  source.connect(gain);
-  gain.connect(audioCtx.destination);
-  source.start(startTime);
-  source.stop(startTime + duration);
+  const tid = setTimeout(() => {
+    try {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type || "square";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      g.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+      g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }, delay * 1000);
+  return tid;
+}
+
+function scheduleMusicNote(freq, dur, type, vol, delay) {
+  if (!audioCtx) return;
+  const tid = setTimeout(() => {
+    try {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type || "square";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      g.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+      g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
+      osc.connect(g);
+      g.connect(musicGain);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }, delay * 1000);
+  musicTids.push(tid);
 }
 
 function playArcadeMusic() {
   if (!audioCtx) return;
   const bpm = 165;
   const beat = 60 / bpm;
-  const loopLen = 16;
   const melody = [
     784, 880, 988, 880, 784, 880, 1047, 988,
     880, 784, 880, 988, 1047, 988, 880, 784,
@@ -337,94 +359,118 @@ function playArcadeMusic() {
     392, 523, 659, 784, 659, 523, 392, 330
   ];
 
-  const now = audioCtx.currentTime;
-  for (let i = 0; i < loopLen; i++) {
-    const t = now + i * beat;
-    playTone(melody[i], beat * 0.85, "square", 0.05, t);
-    playTone(bass[i], beat * 0.9, "triangle", 0.07, t);
-    if (i % 2 === 0) playTone(arp[i] * 2, beat * 0.3, "square", 0.02, t + beat * 0.5);
+  for (let i = 0; i < melody.length; i++) {
+    const t = i * beat;
+    scheduleMusicNote(melody[i], beat * 0.85, "square", 0.05, t);
+    scheduleMusicNote(bass[i], beat * 0.9, "triangle", 0.07, t);
+    if (i % 2 === 0) scheduleMusicNote(arp[i] * 2, beat * 0.3, "square", 0.02, t + beat * 0.5);
   }
-  musicTimer = setTimeout(playArcadeMusic, (loopLen * beat - 0.02) * 1000);
+
+  musicTids.push(setTimeout(playArcadeMusic, melody.length * beat * 1000));
 }
 
-let musicTimer = null;
-let voiceTimer = null;
+let ms = null;
 
 function startMusic() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
+  restartMusicGain();
   playArcadeMusic();
 }
 
 function stopMusic() {
-  if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
-  if (voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; }
+  killMusic();
 }
 
 function playCollectSound() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
-  stopMusic();
+  killMusic();
 
-  const now = audioCtx.currentTime;
-  // "AHÍ"
-  playTone(580, 0.12, "square", 0.20, now);
-  playNoise(0.04, 0.15, now + 0.12);
-  playTone(720, 0.12, "square", 0.20, now + 0.16);
-  // "ESTÁ"
-  playNoise(0.03, 0.12, now + 0.30);
-  playTone(660, 0.10, "square", 0.18, now + 0.33);
-  playTone(540, 0.12, "square", 0.20, now + 0.44);
-  // "MA"
-  playTone(630, 0.10, "square", 0.20, now + 0.60);
-  // "CHO"
-  playNoise(0.04, 0.15, now + 0.70);
-  playTone(440, 0.12, "square", 0.18, now + 0.75);
-  // "TE!!"
-  playTone(520, 0.08, "square", 0.20, now + 0.88);
-  playTone(880, 0.18, "square", 0.25, now + 0.98);
-  playTone(1100, 0.10, "sawtooth", 0.15, now + 1.02);
+  const s = [
+    [580, 0.12, "square", 0.22, 0],
+    [0, 0.04, 0, 0.15, 0.12],
+    [720, 0.12, "square", 0.22, 0.16],
+    [0, 0.03, 0, 0.12, 0.30],
+    [660, 0.10, "square", 0.20, 0.33],
+    [540, 0.12, "square", 0.22, 0.44],
+    [630, 0.10, "square", 0.22, 0.60],
+    [0, 0.04, 0, 0.15, 0.70],
+    [440, 0.12, "square", 0.20, 0.75],
+    [520, 0.08, "square", 0.22, 0.88],
+    [880, 0.18, "square", 0.26, 0.98],
+    [1100, 0.10, "sawtooth", 0.18, 1.02]
+  ];
+  s.forEach(n => {
+    if (n[0] === 0) {
+      playNoiseTimeout(n[1], n[3], n[4]);
+    } else {
+      playTone(n[0], n[1], n[2], n[3], n[4]);
+    }
+  });
 
-  voiceTimer = setTimeout(startMusic, 1300);
+  ms = setTimeout(startMusic, 1400);
+}
+
+function playNoiseTimeout(dur, vol, delay) {
+  if (!audioCtx) return;
+  setTimeout(() => {
+    try {
+      const bufferSize = audioCtx.sampleRate * dur;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(vol, audioCtx.currentTime);
+      g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
+      src.connect(g);
+      g.connect(audioCtx.destination);
+      src.start();
+      src.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }, delay * 1000);
 }
 
 function playGameOverSound() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
-  stopMusic();
+  killMusic();
 
-  const now = audioCtx.currentTime;
-  // "BIEN"
-  playTone(780, 0.12, "square", 0.20, now);
-  playTone(660, 0.10, "square", 0.18, now + 0.14);
-  // "JUGA"
-  playNoise(0.04, 0.14, now + 0.26);
-  playTone(710, 0.10, "square", 0.18, now + 0.30);
-  playTone(590, 0.08, "square", 0.18, now + 0.42);
-  // "DO"
-  playTone(520, 0.12, "square", 0.20, now + 0.52);
-  // "BONITO"
-  playTone(580, 0.10, "square", 0.18, now + 0.66);
-  playTone(640, 0.10, "square", 0.18, now + 0.78);
-  playTone(580, 0.08, "square", 0.18, now + 0.90);
-  playTone(490, 0.12, "square", 0.20, now + 1.00);
-  // "ALA"
-  playNoise(0.03, 0.12, now + 1.16);
-  playTone(440, 0.10, "square", 0.18, now + 1.20);
-  playTone(520, 0.10, "square", 0.18, now + 1.32);
-  // "A TRABAJAR!!"
-  playNoise(0.03, 0.12, now + 1.46);
-  playTone(660, 0.10, "square", 0.18, now + 1.50);
-  playTone(580, 0.08, "square", 0.18, now + 1.62);
-  playTone(490, 0.08, "square", 0.18, now + 1.72);
-  playTone(740, 0.08, "square", 0.18, now + 1.82);
-  playTone(440, 0.08, "square", 0.18, now + 1.92);
-  playTone(330, 0.10, "square", 0.18, now + 2.02);
-  // Final fanfare
-  playTone(880, 0.12, "sawtooth", 0.18, now + 2.12);
-  playTone(1100, 0.18, "sawtooth", 0.16, now + 2.20);
-  playTone(1047, 0.10, "triangle", 0.20, now + 2.32);
-  playTone(1319, 0.50, "triangle", 0.25, now + 2.42);
+  const s = [
+    [780, 0.12, "square", 0.22, 0],
+    [660, 0.10, "square", 0.20, 0.14],
+    [0, 0.04, 0, 0.14, 0.26],
+    [710, 0.10, "square", 0.20, 0.30],
+    [590, 0.08, "square", 0.20, 0.42],
+    [520, 0.12, "square", 0.22, 0.52],
+    [580, 0.10, "square", 0.20, 0.66],
+    [640, 0.10, "square", 0.20, 0.78],
+    [580, 0.08, "square", 0.20, 0.90],
+    [490, 0.12, "square", 0.22, 1.00],
+    [0, 0.03, 0, 0.12, 1.16],
+    [440, 0.10, "square", 0.20, 1.20],
+    [520, 0.10, "square", 0.20, 1.32],
+    [0, 0.03, 0, 0.12, 1.46],
+    [660, 0.10, "square", 0.20, 1.50],
+    [580, 0.08, "square", 0.20, 1.62],
+    [490, 0.08, "square", 0.20, 1.72],
+    [740, 0.08, "square", 0.20, 1.82],
+    [440, 0.08, "square", 0.20, 1.92],
+    [330, 0.10, "square", 0.20, 2.02],
+    [880, 0.12, "sawtooth", 0.20, 2.12],
+    [1100, 0.18, "sawtooth", 0.18, 2.20],
+    [1047, 0.10, "triangle", 0.22, 2.32],
+    [1319, 0.50, "triangle", 0.28, 2.42]
+  ];
+  s.forEach(n => {
+    if (n[0] === 0) {
+      playNoiseTimeout(n[1], n[3], n[4]);
+    } else {
+      playTone(n[0], n[1], n[2], n[3], n[4]);
+    }
+  });
 }
 
 // ====================== CONTROLS ======================
