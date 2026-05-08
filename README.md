@@ -1,27 +1,36 @@
-# Pepe Game 🐸
+# Pepe Games 👾
 
-Un juego arcade tipo Flappy Bird donde controlas a Pepe esquivando tuberías y coleccionando objetos.
+Hub arcade multijuegos con estilo retro ochentero. Pantalla principal seleccionable con 8 juegos, CRT scanlines, neones y sonido chiptune.
 
-## 🎮 Cómo jugar
+## 🎮 Juegos disponibles
+
+| Juego | Estado |
+|-------|--------|
+| 🏗️ **ESQUIVAR TUBERÍAS** | ✅ Disponible |
+| 🧱 **TETRIS 4 LINK** | 🔗 [GitHub](https://github.com/jlrmaster-creator/tetris-4-link) |
+| 👾 **INVADERS SPACE** | 🔧 Pronto |
+| 🏎️ **TURBO RACER** | 🔧 Pronto |
+| 🧟 **ZOMBIE SURVIVOR** | 🔧 Pronto |
+| 🕹️ **RETRO FIGHTER** | 🔧 Pronto |
+| 🌌 **STAR COMMAND** | 🔧 Pronto |
+| 🍕 **PIZZA CHEF** | 🔧 Pronto |
+
+## 🕹️ Cómo jugar a Esquivar Tuberías
 
 - **Espacio** o **clic** → Saltar
-- **P** o **ESC** → Pausar/Reanudar
-- **Móvil**: Botones en pantalla ▲ (saltar) ⏸ (pausa)
+- **P** o **ESC** → Pausar
+- **Móvil**: Botones ▲ (saltar) ⏸ (pausa) en pantalla
 
-## ⭐ Objetivo
+Atraviesa tuberías, colecciona monedas 🪙 y jamones 🍖 para recuperar vida.
 
-Atraviesa los huecos de las tuberías para ganar puntos. Cada 10 puntos subes de nivel y la velocidad aumenta.
+## 🚀 Abrir
 
-## ❤️ Vida
+Solo abre `1.html` en cualquier navegador moderno. No necesita instalación.
 
-Tienes una barra de vida. Chocar contra tuberías la reduce. Recoge objetos para recuperarla:
-- **Monedas** 🪙 → +3 puntos, +8 vida
-- **Jamones** 🍖 → +5 puntos, +15 vida
+## 💙 Donaciones
 
-## 🚀 Jugarlo
+Aceptamos donaciones por **Bizum**. Contacta para más info.
 
-Abre `1.html` en cualquier navegador moderno. No necesita instalación ni servidor.
+## 👤 Créditos
 
-## 🖥️ Tecnología
-
-HTML5 + Canvas + Web Audio API. Sin dependencias externas.
+Created by: **José López-Romero Moraleda**
