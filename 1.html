@@ -284,7 +284,6 @@
 
   /* HUB hidden when game active */
   #gameContainer {
-    display: none;
     position: relative;
     border: 4px solid #e2b714;
     border-radius: 12px;
@@ -293,9 +292,7 @@
     max-width: 100vw;
   }
 
-  #gameContainer.active { display: block; }
-  #gameWrapper { display: none; flex-direction: column; align-items: center; }
-  #gameWrapper.active { display: flex; }
+  #gameWrapper { flex-direction: column; align-items: center; }
 
   #titleBar {
     background: linear-gradient(90deg, #c49a0a, #e2b714, #c49a0a);
@@ -560,7 +557,7 @@
 </div>
 
 <!-- ========== JUEGO: ESQUIVAR TUBERÍAS ========== -->
-<div id="gameWrapper">
+<div id="gameWrapper" style="display:none;">
   <div id="backBar" style="text-align:center;margin-bottom:4px;">
     <button class="backBtn" onclick="closeGame()">← VOLVER</button>
   </div>
@@ -598,16 +595,16 @@
 function openGame(game) {
   if (game === 'pipe') {
     document.getElementById('hub').style.display = 'none';
-    document.getElementById('gameWrapper').classList.add('active');
-    document.getElementById('gameContainer').classList.add('active');
+    document.getElementById('gameWrapper').style.display = 'flex';
+    document.getElementById('gameContainer').style.display = 'block';
   }
 }
 
 function closeGame() {
   stopMusic();
   document.getElementById('hub').style.display = 'block';
-  document.getElementById('gameWrapper').classList.remove('active');
-  document.getElementById('gameContainer').classList.remove('active');
+  document.getElementById('gameWrapper').style.display = 'none';
+  document.getElementById('gameContainer').style.display = 'none';
   location.reload();
 }
 
