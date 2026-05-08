@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pepe Game</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  #gameContainer {
+    position: relative;
+    border: 4px solid #e2b714;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(226, 183, 20, 0.3), inset 0 0 20px rgba(226, 183, 20, 0.1);
+    overflow: hidden;
+    max-width: 100vw;
+  }
+
+  #titleBar {
+    background: linear-gradient(90deg, #c49a0a, #e2b714, #c49a0a);
+    padding: 6px 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #2d1f00;
+    letter-spacing: 4px;
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.3);
+    border-bottom: 2px solid #a07d0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  #titleBar img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  canvas {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+  }
+
+  #menu, #gameOver {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 42%;
+    left: 0;
+    color: white;
+    pointer-events: none;
+  }
+
+  #menu h1, #gameOver h1 {
+    font-size: 40px;
+    margin: 0;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+    pointer-events: auto;
+  }
+
+  #menu h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  #menu h1 img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+
+  #menu h1 { color: #fff; }
+  #gameOver h1 { color: #ff6b6b; }
+
+  #menu p {
+    font-size: 16px;
+    opacity: 0.8;
+    margin: 8px 0 16px;
+    pointer-events: auto;
+  }
+
+  button {
+    padding: 12px 36px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    pointer-events: auto;
+    background: linear-gradient(180deg, #e2b714, #c49a0a);
+    border: 2px solid #a07d0a;
+    border-radius: 8px;
+    color: #2d1f00;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(226, 183, 20, 0.5);
+  }
+
+  button:active {
+    transform: scale(0.95);
+  }
+
+  #gameOver p {
+    font-size: 28px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+    pointer-events: auto;
+  }
+
+  /* Mobile controls */
+  #mobileControls {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    width: 100%;
+    display: none;
+    justify-content: space-between;
+    padding: 0 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #mobileControls button {
+    pointer-events: auto;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(226,183,20,0.85), rgba(196,154,10,0.85));
+    border: 2px solid rgba(160,125,10,0.8);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);
+  }
+
+  #mobileControls button:active {
+    transform: scale(0.9);
+  }
+
+  #mobileControls button.pauseBtn {
+    font-size: 22px;
+    width: 50px;
+    height: 50px;
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    #mobileControls { display: flex; }
+    #pauseHint { display: none; }
+  }
+
+  #pauseHint {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    color: rgba(255,255,255,0.3);
+    font-size: 11px;
+    font-family: Arial, sans-serif;
+    pointer-events: none;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+  <div id="titleBar">
+    <img src="avatar.png" alt=""> PEPE GAME
+  </div>
+  <div style="position:relative;">
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="pauseHint">P ↵ Pausa</div>
+
+    <div id="mobileControls">
+      <button class="pauseBtn" id="mobilePauseBtn" onclick="togglePause()">⏸</button>
+      <button id="mobileJumpBtn">▲</button>
+    </div>
+
+    <div id="menu">
+      <h1><img src="avatar.png" alt=""> Pepe Game</h1>
+      <p>Esquiva tuberías, colecciona monedas y jamones</p>
+      <button onclick="startGame()">Empezar</button>
+    </div>
+
+    <div id="gameOver" style="display:none;">
+      <h1>Game Over</h1>
+      <p id="finalScore"></p>
+      <button onclick="restartGame()">Reintentar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let gameRunning = false;
+let paused = false;
+let frames = 0;
+let startDelay = 0;
+
+// --- Avatar ---
+const avatarImg = new Image();
+avatarImg.src = "avatar.png";
+
+let player = {
+  x: 80,
+  y: 300,
+  radius: 15,
+  velocity: 0,
+  gravity: 0.5,
+  jump: -8,
+  life: 100,
+  size: 42
+};
+
+// --- Pipes ---
+let pipes = [];
+const PIPE_GAP = 140;
+const PIPE_WIDTH = 50;
+
+// --- Collectibles ---
+let collectibles = [];
+
+// --- Score / Level ---
+let score = 0;
+let level = 1;
+let levelUpFrames = 0;
+
+// --- Background clouds ---
+const clouds = [];
+for (let i = 0; i < 5; i++) {
+  clouds.push({
+    x: Math.random() * canvas.width,
+    y: 30 + Math.random() * 120,
+    w: 60 + Math.random() * 80,
+    speed: 0.2 + Math.random() * 0.3
+  });
+}
+
+// ====================== AUDIO ======================
+let audioCtx = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playNote(freq, duration, type, gainVal, startTime) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || "square";
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(gainVal || 0.1, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
+
+function playArcadeMusic() {
+  if (!audioCtx) return;
+  const bpm = 140;
+  const beat = 60 / bpm;
+  const loopLen = 8;
+
+  const melody = [
+    523, 587, 659, 784, 659, 587, 523, 440,
+    523, 659, 784, 880, 784, 659, 523, 587
+  ];
+
+  const bass = [
+    131, 131, 165, 165, 196, 196, 165, 131,
+    131, 131, 165, 165, 196, 196, 165, 131
+  ];
+
+  const now = audioCtx.currentTime;
+  for (let i = 0; i < loopLen; i++) {
+    const t = now + i * beat * 2;
+    playNote(melody[i], beat * 1.8, "square", 0.06, t);
+    playNote(bass[i], beat * 1.8, "triangle", 0.08, t);
+    playNote(melody[i] * 1.5, beat * 0.5, "square", 0.03, t + beat);
+  }
+
+  const nextStart = now + loopLen * beat * 2 - 0.05;
+  musicTimer = setTimeout(playArcadeMusic, nextStart * 1000 - audioCtx.currentTime * 1000);
+}
+
+let musicTimer = null;
+
+function startMusic() {
+  initAudio();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  playArcadeMusic();
+}
+
+function stopMusic() {
+  if (musicTimer) {
+    clearTimeout(musicTimer);
+    musicTimer = null;
+  }
+}
+
+// ====================== CONTROLS ======================
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") jump();
+  if (e.code === "KeyP" || e.code === "Escape") togglePause();
+});
+canvas.addEventListener("click", jump);
+
+// Mobile jump button
+document.getElementById("mobileJumpBtn").addEventListener("click", jump);
+document.getElementById("mobileJumpBtn").addEventListener("touchstart", e => {
+  e.preventDefault();
+  jump();
+});
+
+// Mobile pause button touch support
+document.getElementById("mobilePauseBtn").addEventListener("touchstart", e => {
+  e.preventDefault();
+  togglePause();
+});
+
+function jump() {
+  if (gameRunning && !paused && startDelay <= 0) player.velocity = player.jump;
+}
+
+function togglePause() {
+  if (!gameRunning || startDelay > 0) return;
+  paused = !paused;
+}
+
+function startGame() {
+  document.getElementById("menu").style.display = "none";
+  gameRunning = true;
+  startDelay = 120;
+  startMusic();
+  loop();
+}
+
+function restartGame() {
+  stopMusic();
+  location.reload();
+}
+
+// ====================== GAME LOOP ======================
+function loop() {
+  if (!paused) update();
+  draw();
+  if (gameRunning) requestAnimationFrame(loop);
+}
+
+function spawnCollectible(x, y) {
+  const type = Math.random() < 0.5 ? "coin" : "ham";
+  collectibles.push({ x, y, type, r: 9, collected: false });
+}
+
+function update() {
+  if (startDelay > 0) {
+    startDelay--;
+    clouds.forEach(c => {
+      c.x -= c.speed;
+      if (c.x + c.w < 0) {
+        c.x = canvas.width;
+        c.y = 30 + Math.random() * 120;
+        c.w = 60 + Math.random() * 80;
+      }
+    });
+    return;
+  }
+
+  player.velocity += player.gravity;
+  player.y += player.velocity;
+
+  clouds.forEach(c => {
+    c.x -= c.speed;
+    if (c.x + c.w < 0) {
+      c.x = canvas.width;
+      c.y = 30 + Math.random() * 120;
+      c.w = 60 + Math.random() * 80;
+    }
+  });
+
+  if (frames % 90 === 0) {
+    const top = Math.random() * 300;
+    pipes.push({
+      x: canvas.width,
+      top,
+      bottom: top + PIPE_GAP
+    });
+    if (Math.random() < 0.5) {
+      spawnCollectible(canvas.width, top + PIPE_GAP / 2);
+    }
+  }
+
+  pipes.forEach(pipe => {
+    pipe.x -= 2 + level * 0.3;
+
+    if (
+      player.x + player.radius > pipe.x &&
+      player.x - player.radius < pipe.x + PIPE_WIDTH &&
+      (player.y - player.radius < pipe.top ||
+       player.y + player.radius > pipe.bottom)
+    ) {
+      player.life -= 0.5;
+    }
+
+    if (!pipe.passed && pipe.x < player.x) {
+      score++;
+      pipe.passed = true;
+    }
+  });
+
+  const newLevel = Math.floor(score / 10) + 1;
+  if (newLevel > level) {
+    level = newLevel;
+    levelUpFrames = 30;
+  }
+
+  collectibles.forEach(c => {
+    c.x -= 2 + level * 0.3;
+
+    const dx = player.x - c.x;
+    const dy = player.y - c.y;
+    if (Math.sqrt(dx * dx + dy * dy) < player.radius + c.r) {
+      c.collected = true;
+      if (c.type === "coin") {
+        score += 3;
+        player.life = Math.min(100, player.life + 8);
+      } else {
+        score += 5;
+        player.life = Math.min(100, player.life + 15);
+      }
+    }
+  });
+
+  collectibles = collectibles.filter(c => !c.collected);
+
+  if (player.life <= 0 || player.y > canvas.height) {
+    endGame();
+  }
+}
+
+// ====================== DRAWING ======================
+function drawBackground() {
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, "#4dc9f6");
+  grad.addColorStop(0.6, "#87ceeb");
+  grad.addColorStop(1, "#98d8c8");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  clouds.forEach(c => {
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, c.w / 2, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(c.x - c.w * 0.25, c.y + 8, c.w * 0.3, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(c.x + c.w * 0.25, c.y + 8, c.w * 0.3, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "#7ec850";
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height);
+  for (let x = 0; x <= canvas.width; x += 5) {
+    const h = Math.sin(x * 0.01 + 1) * 20 + Math.sin(x * 0.03) * 10;
+    ctx.lineTo(x, canvas.height - 50 + h);
+  }
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#6ab040";
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height);
+  for (let x = 0; x <= canvas.width; x += 5) {
+    const h = Math.sin(x * 0.015 + 3) * 15 + Math.sin(x * 0.04 + 1) * 8;
+    ctx.lineTo(x, canvas.height - 30 + h);
+  }
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function draw() {
+  drawBackground();
+
+  pipes.forEach(pipe => {
+    const grad = ctx.createLinearGradient(pipe.x, 0, pipe.x + PIPE_WIDTH, 0);
+    grad.addColorStop(0, "#2d7a2d");
+    grad.addColorStop(0.3, "#4caf50");
+    grad.addColorStop(0.7, "#4caf50");
+    grad.addColorStop(1, "#2d7a2d");
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
+    ctx.fillRect(pipe.x, pipe.bottom, PIPE_WIDTH, canvas.height);
+
+    ctx.fillStyle = "#3e8e41";
+    ctx.fillRect(pipe.x - 4, pipe.top - 20, PIPE_WIDTH + 8, 20);
+    ctx.fillRect(pipe.x - 4, pipe.bottom, PIPE_WIDTH + 8, 20);
+
+    ctx.fillStyle = "#66bb6a";
+    ctx.fillRect(pipe.x - 2, pipe.top - 18, 6, 16);
+    ctx.fillRect(pipe.x - 2, pipe.bottom + 2, 6, 16);
+  });
+
+  collectibles.forEach(c => {
+    const pulse = 1 + Math.sin(frames * 0.08 + c.x) * 0.15;
+
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.scale(pulse, pulse);
+
+    if (c.type === "coin") {
+      ctx.fillStyle = "#ffd700";
+      ctx.beginPath();
+      ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffec8b";
+      ctx.beginPath();
+      ctx.arc(-2, -2, c.r * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#b8860b";
+      ctx.font = "bold 10px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("¢", 0, 1);
+    } else {
+      ctx.fillStyle = "#e88ca5";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, c.r, c.r * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#d46a84";
+      ctx.beginPath();
+      ctx.ellipse(0, -1, c.r * 0.4, c.r * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f0c0c8";
+      ctx.beginPath();
+      ctx.ellipse(3, 0, 2, 3, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(-3, 0, 2, 3, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  });
+
+  const tilt = Math.min(Math.max(player.velocity * 2, -30), 30);
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.rotate(tilt * Math.PI / 180);
+
+  const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, player.size);
+  glow.addColorStop(0, "rgba(255,255,200,0.15)");
+  glow.addColorStop(1, "rgba(255,255,200,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, player.size, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (avatarImg.complete) {
+    ctx.drawImage(avatarImg, -player.size / 2, -player.size / 2, player.size, player.size);
+  } else {
+    ctx.fillStyle = "green";
+    ctx.beginPath();
+    ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // --- HUD: Score & Level ---
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.beginPath();
+  ctx.roundRect(8, 8, 180, 58, 8);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.1)";
+  ctx.beginPath();
+  ctx.roundRect(10, 10, 176, 54, 6);
+  ctx.fill();
+
+  ctx.font = "bold 18px 'Segoe UI', Arial, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#ffd700";
+  ctx.fillText("⭐ Score: " + score, 18, 16);
+  ctx.fillStyle = "#a0d8ff";
+  ctx.fillText("📊 Nivel: " + level, 18, 40);
+
+  // --- HUD: Life bar ---
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.beginPath();
+  ctx.roundRect(canvas.width - 138, 8, 130, 38, 8);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.1)";
+  ctx.beginPath();
+  ctx.roundRect(canvas.width - 136, 10, 126, 34, 6);
+  ctx.fill();
+
+  ctx.fillStyle = "#ff6b6b";
+  ctx.font = "bold 11px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("❤️ VIDA", canvas.width - 130, 14);
+
+  const barX = canvas.width - 130;
+  const barY = 30;
+  const barW = 110;
+  const barH = 8;
+  ctx.fillStyle = "#444";
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, barW, barH, 4);
+  ctx.fill();
+  const lifeColor = player.life > 50 ? "#4caf50" : player.life > 25 ? "#ff9800" : "#f44336";
+  ctx.fillStyle = lifeColor;
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, barW * (player.life / 100), barH, 4);
+  ctx.fill();
+
+  // --- Level-up notification ---
+  if (levelUpFrames > 0) {
+    levelUpFrames--;
+    const alpha = Math.min(1, levelUpFrames / 20);
+    ctx.fillStyle = `rgba(255,215,0,${alpha})`;
+    ctx.font = "bold 28px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⬆ NIVEL " + level + "!", canvas.width / 2, canvas.height / 2 - 50);
+
+    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
+    ctx.font = "16px Arial";
+    ctx.fillText("Velocidad aumentada", canvas.width / 2, canvas.height / 2 - 16);
+  }
+
+  // --- Start countdown ---
+  if (gameRunning && startDelay > 0) {
+    const seconds = Math.ceil(startDelay / 60);
+    ctx.fillStyle = `rgba(0,0,0,${Math.min(0.5, (120 - startDelay) / 120)})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 48px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(seconds, canvas.width / 2, canvas.height / 2);
+
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.fillText("¡Prepárate!", canvas.width / 2, canvas.height / 2 + 50);
+  }
+
+  // --- Pause overlay ---
+  if (paused) {
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 44px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⏸ PAUSA", canvas.width / 2, canvas.height / 2 - 20);
+
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.font = "16px Arial";
+    ctx.fillText("Pulsa P o ESC para reanudar", canvas.width / 2, canvas.height / 2 + 40);
+  }
+}
+
+function endGame() {
+  stopMusic();
+  gameRunning = false;
+  document.getElementById("gameOver").style.display = "block";
+  document.getElementById("finalScore").innerText =
+    "Puntuación: " + score;
+}
+
+setInterval(() => frames++, 1000 / 60);
+</script>
+
+</body>
+</html>
