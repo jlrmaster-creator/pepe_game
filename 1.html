@@ -294,6 +294,7 @@
   }
 
   #gameContainer.active { display: block; }
+  #gameWrapper.active { display: flex; }
 
   #titleBar {
     background: linear-gradient(90deg, #c49a0a, #e2b714, #c49a0a);
@@ -558,13 +559,14 @@
 </div>
 
 <!-- ========== JUEGO: ESQUIVAR TUBERÍAS ========== -->
-<div id="backBar" style="display:none;text-align:center;margin-bottom:4px;">
-  <button class="backBtn" onclick="closeGame()">← VOLVER</button>
-</div>
-<div id="gameContainer">
-  <div id="titleBar">
-    <img src="avatar.png" alt=""> ESQUIVAR TUBERÍAS
+<div id="gameWrapper" style="display:none;flex-direction:column;align-items:center;">
+  <div id="backBar" style="text-align:center;margin-bottom:4px;">
+    <button class="backBtn" onclick="closeGame()">← VOLVER</button>
   </div>
+  <div id="gameContainer">
+    <div id="titleBar">
+      <img src="avatar.png" alt=""> ESQUIVAR TUBERÍAS
+    </div>
   <div style="position:relative;">
     <canvas id="gameCanvas" width="400" height="600"></canvas>
     <div id="pauseHint" style="position:absolute;bottom:8px;right:12px;color:rgba(255,255,255,0.3);font-size:9px;font-family:'Press Start 2P',monospace;pointer-events:none;">P ↵ Pausa</div>
@@ -595,7 +597,7 @@
 function openGame(game) {
   if (game === 'pipe') {
     document.getElementById('hub').style.display = 'none';
-    document.getElementById('backBar').style.display = 'block';
+    document.getElementById('gameWrapper').classList.add('active');
     document.getElementById('gameContainer').classList.add('active');
   }
 }
@@ -603,6 +605,7 @@ function openGame(game) {
 function closeGame() {
   stopMusic();
   document.getElementById('hub').style.display = 'block';
+  document.getElementById('gameWrapper').classList.remove('active');
   document.getElementById('gameContainer').classList.remove('active');
   location.reload();
 }
