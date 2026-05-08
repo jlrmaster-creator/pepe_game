@@ -267,13 +267,29 @@ for (let i = 0; i < 5; i++) {
 
 // ====================== AUDIO ======================
 let audioCtx = null;
+let musicGain = null;
+let sfxGain = null;
 
 function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 1;
+  musicGain.connect(audioCtx.destination);
+  sfxGain = audioCtx.createGain();
+  sfxGain.gain.value = 1;
+  sfxGain.connect(audioCtx.destination);
 }
 
-function playNote(freq, duration, type, gainVal, startTime) {
+function duckMusic() {
+  if (musicGain) musicGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+}
+
+function restoreMusic() {
+  if (musicGain) musicGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
+}
+
+function playNote(freq, duration, type, gainVal, startTime, isSfx) {
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type || "square";
@@ -284,12 +300,12 @@ function playNote(freq, duration, type, gainVal, startTime) {
   gain.gain.linearRampToValueAtTime(gainVal * 0.8, startTime + duration * 0.7);
   gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(isSfx ? sfxGain : musicGain);
   osc.start(startTime);
   osc.stop(startTime + duration);
 }
 
-function playNoise(duration, gainVal, startTime) {
+function playNoise(duration, gainVal, startTime, isSfx) {
   const bufferSize = audioCtx.sampleRate * duration;
   const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -302,19 +318,17 @@ function playNoise(duration, gainVal, startTime) {
   gain.gain.setValueAtTime(gainVal, startTime);
   gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
   source.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(isSfx ? sfxGain : musicGain);
   source.start(startTime);
   source.stop(startTime + duration);
 }
 
-// Chiptune voice synthesis — maps text to silly robot voice
 function playVoice(text, speed, gainVal) {
   if (!audioCtx) return;
   speed = speed || 0.12;
   gainVal = gainVal || 0.08;
   const now = audioCtx.currentTime;
 
-  // Vowel-to-frequency mapping
   const vowelFreq = c => {
     const ch = c.toLowerCase();
     if ("aeiouáéíóú".includes(ch)) {
@@ -322,7 +336,6 @@ function playVoice(text, speed, gainVal) {
       return map[ch] || 500;
     }
     if (c === " ") return 0;
-    // Consonants — short noise burst
     return -1;
   };
 
@@ -331,10 +344,10 @@ function playVoice(text, speed, gainVal) {
     const ch = text[i];
     const f = vowelFreq(ch);
     if (f > 0) {
-      playNote(f + Math.random() * 10, speed * 1.2, "square", gainVal, t);
+      playNote(f + Math.random() * 10, speed * 1.2, "square", gainVal, t, true);
       t += speed * 0.9;
     } else if (f === -1) {
-      playNoise(speed * 0.3, gainVal * 1.5, t);
+      playNoise(speed * 0.3, gainVal * 1.5, t, true);
       t += speed * 0.3;
     } else {
       t += speed * 0.4;
@@ -348,7 +361,6 @@ function playArcadeMusic() {
   const beat = 60 / bpm;
   const loopLen = 16;
 
-  // Lead melody (square wave)
   const melody = [
     784, 880, 988, 880, 784, 880, 1047, 988,
     880, 784, 880, 988, 1047, 988, 880, 784,
@@ -356,7 +368,6 @@ function playArcadeMusic() {
     1047, 988, 880, 784, 659, 784, 880, 784
   ];
 
-  // Bass (triangle)
   const bass = [
     165, 165, 196, 196, 220, 220, 262, 262,
     165, 165, 196, 196, 220, 220, 262, 262,
@@ -364,7 +375,6 @@ function playArcadeMusic() {
     131, 131, 165, 165, 196, 196, 220, 220
   ];
 
-  // Arpeggio (pulse)
   const arp = [
     523, 659, 784, 880, 784, 659, 523, 440,
     523, 659, 784, 880, 784, 659, 523, 440,
@@ -375,10 +385,10 @@ function playArcadeMusic() {
   const now = audioCtx.currentTime;
   for (let i = 0; i < loopLen; i++) {
     const t = now + i * beat;
-    playNote(melody[i], beat * 0.85, "square", 0.05, t);
-    playNote(bass[i], beat * 0.9, "triangle", 0.07, t);
+    playNote(melody[i], beat * 0.85, "square", 0.05, t, false);
+    playNote(bass[i], beat * 0.9, "triangle", 0.07, t, false);
     if (i % 2 === 0) {
-      playNote(arp[i] * 2, beat * 0.3, "square", 0.02, t + beat * 0.5);
+      playNote(arp[i] * 2, beat * 0.3, "square", 0.02, t + beat * 0.5, false);
     }
   }
 
@@ -404,67 +414,52 @@ function stopMusic() {
 function playCollectSound() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
-  // "¡¡ahí está machote!!" — silly robot voice
-  // Split into chunks to sound more expressive
+  duckMusic();
   const now = audioCtx.currentTime;
-  // "¡AHÍ"
-  playNote(580, 0.14, "square", 0.07, now);
-  playNoise(0.04, 0.08, now + 0.14);
-  playNote(720, 0.12, "square", 0.07, now + 0.18);
-  // "ESTÁ"
-  playNoise(0.03, 0.06, now + 0.32);
-  playNote(660, 0.10, "square", 0.06, now + 0.35);
-  playNote(540, 0.14, "square", 0.07, now + 0.46);
-  // "MA"
-  playNote(630, 0.10, "square", 0.07, now + 0.62);
-  // "CHO"
-  playNoise(0.04, 0.08, now + 0.73);
-  playNote(440, 0.12, "square", 0.06, now + 0.78);
-  // "TE!!"
-  playNote(520, 0.08, "square", 0.07, now + 0.92);
-  playNote(880, 0.20, "square", 0.08, now + 1.02);
-
-  // Woo accent
-  playNote(1100, 0.10, "sawtooth", 0.04, now + 1.06);
+  playNote(580, 0.14, "square", 0.25, now, true);
+  playNoise(0.05, 0.20, now + 0.14, true);
+  playNote(720, 0.12, "square", 0.25, now + 0.18, true);
+  playNoise(0.04, 0.16, now + 0.32, true);
+  playNote(660, 0.10, "square", 0.22, now + 0.35, true);
+  playNote(540, 0.14, "square", 0.25, now + 0.46, true);
+  playNote(630, 0.10, "square", 0.25, now + 0.62, true);
+  playNoise(0.05, 0.20, now + 0.73, true);
+  playNote(440, 0.12, "square", 0.22, now + 0.78, true);
+  playNote(520, 0.08, "square", 0.25, now + 0.92, true);
+  playNote(880, 0.20, "square", 0.28, now + 1.02, true);
+  playNote(1100, 0.10, "sawtooth", 0.18, now + 1.06, true);
+  setTimeout(restoreMusic, 1300);
 }
 
 function playGameOverSound() {
   initAudio();
   if (audioCtx.state === "suspended") audioCtx.resume();
+  duckMusic();
   const now = audioCtx.currentTime;
-  // "¡¡BIEN"
-  playNote(780, 0.14, "square", 0.07, now);
-  playNote(660, 0.10, "square", 0.06, now + 0.15);
-  // "JUGA"
-  playNoise(0.04, 0.07, now + 0.28);
-  playNote(710, 0.10, "square", 0.06, now + 0.33);
-  playNote(590, 0.08, "square", 0.06, now + 0.44);
-  // "DO"
-  playNote(520, 0.12, "square", 0.07, now + 0.54);
-  // "BONITO"
-  playNote(580, 0.10, "square", 0.06, now + 0.70);
-  playNote(640, 0.10, "square", 0.06, now + 0.82);
-  playNote(580, 0.08, "square", 0.06, now + 0.94);
-  playNote(490, 0.12, "square", 0.07, now + 1.04);
-  // "ALA"
-  playNoise(0.03, 0.06, now + 1.22);
-  playNote(440, 0.10, "square", 0.06, now + 1.26);
-  playNote(520, 0.10, "square", 0.06, now + 1.38);
-  // "A TRABAJAR!!"
-  playNoise(0.03, 0.06, now + 1.52);
-  playNote(660, 0.10, "square", 0.06, now + 1.56);
-  playNote(580, 0.08, "square", 0.06, now + 1.68);
-  playNote(490, 0.08, "square", 0.06, now + 1.78);
-  playNote(740, 0.08, "square", 0.06, now + 1.88);
-  playNote(440, 0.08, "square", 0.06, now + 1.98);
-  playNote(330, 0.10, "square", 0.06, now + 2.08);
-  // Final accent
-  playNote(880, 0.15, "sawtooth", 0.05, now + 2.12);
-  playNote(1100, 0.20, "sawtooth", 0.04, now + 2.20);
-
-  // Ta-dah ending
-  playNote(1047, 0.10, "triangle", 0.06, now + 2.35);
-  playNote(1319, 0.25, "triangle", 0.08, now + 2.45);
+  playNote(780, 0.14, "square", 0.25, now, true);
+  playNote(660, 0.10, "square", 0.22, now + 0.15, true);
+  playNoise(0.05, 0.18, now + 0.28, true);
+  playNote(710, 0.10, "square", 0.22, now + 0.33, true);
+  playNote(590, 0.08, "square", 0.22, now + 0.44, true);
+  playNote(520, 0.12, "square", 0.25, now + 0.54, true);
+  playNote(580, 0.10, "square", 0.22, now + 0.70, true);
+  playNote(640, 0.10, "square", 0.22, now + 0.82, true);
+  playNote(580, 0.08, "square", 0.22, now + 0.94, true);
+  playNote(490, 0.12, "square", 0.25, now + 1.04, true);
+  playNoise(0.04, 0.16, now + 1.22, true);
+  playNote(440, 0.10, "square", 0.22, now + 1.26, true);
+  playNote(520, 0.10, "square", 0.22, now + 1.38, true);
+  playNoise(0.04, 0.16, now + 1.52, true);
+  playNote(660, 0.10, "square", 0.22, now + 1.56, true);
+  playNote(580, 0.08, "square", 0.22, now + 1.68, true);
+  playNote(490, 0.08, "square", 0.22, now + 1.78, true);
+  playNote(740, 0.08, "square", 0.22, now + 1.88, true);
+  playNote(440, 0.08, "square", 0.22, now + 1.98, true);
+  playNote(330, 0.10, "square", 0.22, now + 2.08, true);
+  playNote(880, 0.15, "sawtooth", 0.20, now + 2.12, true);
+  playNote(1100, 0.20, "sawtooth", 0.18, now + 2.20, true);
+  playNote(1047, 0.10, "triangle", 0.22, now + 2.35, true);
+  playNote(1319, 0.50, "triangle", 0.28, now + 2.45, true);
 }
 
 // ====================== CONTROLS ======================
