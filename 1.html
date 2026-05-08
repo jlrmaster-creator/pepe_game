@@ -312,14 +312,24 @@
   #titleBar .backBtn {
     position: absolute;
     left: 8px;
-    font-size: 12px;
+    font-size: 16px;
     cursor: pointer;
-    background: none;
-    border: none;
+    background: rgba(45,31,0,0.25);
+    border: 2px solid rgba(45,31,0,0.4);
+    border-radius: 8px;
     color: #2d1f00;
     font-family: 'Press Start 2P', monospace;
-    padding: 4px 8px;
+    padding: 6px 12px;
     pointer-events: auto;
+    transition: all 0.2s;
+    font-weight: bold;
+    z-index: 20;
+  }
+
+  #titleBar .backBtn:hover {
+    background: rgba(45,31,0,0.5);
+    border-color: #2d1f00;
+    transform: scale(1.05);
   }
 
   #titleBar .backBtn:hover { color: #fff; }
@@ -550,7 +560,7 @@
 <!-- ========== JUEGO: ESQUIVAR TUBERÍAS ========== -->
 <div id="gameContainer">
   <div id="titleBar">
-    <button class="backBtn" onclick="closeGame()">←</button>
+    <button class="backBtn" onclick="closeGame()">← VOLVER</button>
     <img src="avatar.png" alt=""> ESQUIVAR TUBERÍAS
   </div>
   <div style="position:relative;">
