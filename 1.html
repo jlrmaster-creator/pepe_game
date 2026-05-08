@@ -309,26 +309,22 @@
     gap: 8px;
   }
 
-  #titleBar .backBtn {
-    position: absolute;
-    left: 8px;
+  #titleBar .backBtn, #backBar .backBtn {
     font-size: 16px;
     cursor: pointer;
-    background: rgba(45,31,0,0.25);
-    border: 2px solid rgba(45,31,0,0.4);
+    background: rgba(226,183,20,0.15);
+    border: 2px solid rgba(226,183,20,0.4);
     border-radius: 8px;
-    color: #2d1f00;
+    color: #e2b714;
     font-family: 'Press Start 2P', monospace;
-    padding: 6px 12px;
-    pointer-events: auto;
+    padding: 8px 16px;
     transition: all 0.2s;
     font-weight: bold;
-    z-index: 20;
   }
 
-  #titleBar .backBtn:hover {
-    background: rgba(45,31,0,0.5);
-    border-color: #2d1f00;
+  #backBar .backBtn:hover, #titleBar .backBtn:hover {
+    background: rgba(226,183,20,0.3);
+    border-color: #e2b714;
     transform: scale(1.05);
   }
 
@@ -558,9 +554,11 @@
 </div>
 
 <!-- ========== JUEGO: ESQUIVAR TUBERÍAS ========== -->
+<div id="backBar" style="display:none;text-align:left;margin-bottom:6px;">
+  <button class="backBtn" onclick="closeGame()">← VOLVER AL HUB</button>
+</div>
 <div id="gameContainer">
   <div id="titleBar">
-    <button class="backBtn" onclick="closeGame()">← VOLVER</button>
     <img src="avatar.png" alt=""> ESQUIVAR TUBERÍAS
   </div>
   <div style="position:relative;">
@@ -593,6 +591,7 @@
 function openGame(game) {
   if (game === 'pipe') {
     document.getElementById('hub').style.display = 'none';
+    document.getElementById('backBar').style.display = 'block';
     document.getElementById('gameContainer').classList.add('active');
   }
 }
