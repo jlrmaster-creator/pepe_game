@@ -52,7 +52,7 @@
   #hub {
     width: 100%;
     max-width: 900px;
-    padding: 20px;
+    padding: 12px;
     margin: 0 auto;
     position: relative;
   }
@@ -60,9 +60,9 @@
   /* Header */
   #hubHeader {
     text-align: center;
-    padding: 30px 10px 20px;
+    padding: 16px 10px 12px;
     border-bottom: 3px solid #ff00ff;
-    margin-bottom: 30px;
+    margin-bottom: 12px;
     position: relative;
   }
 
@@ -71,7 +71,7 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 18px;
+    font-size: 14px;
     color: #0ff;
     animation: flicker 2s infinite;
   }
@@ -87,13 +87,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
-    margin-bottom: 10px;
+    gap: 10px;
+    margin-bottom: 6px;
   }
 
   #hubLogo img {
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid #ff0;
@@ -107,8 +107,8 @@
   }
 
   #hubTitle {
-    font-size: 28px;
-    letter-spacing: 6px;
+    font-size: 22px;
+    letter-spacing: 5px;
     text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #ff00ff;
     color: #fff;
     animation: titleGlow 2s ease-in-out infinite alternate;
@@ -120,9 +120,10 @@
   }
 
   #hubSubtitle {
-    font-size: 9px;
+    font-size: 8px;
     color: #ff0;
     letter-spacing: 3px;
+    margin-bottom: 4px;
     margin-top: 8px;
     animation: flicker 3s infinite;
   }
@@ -131,15 +132,15 @@
   #gamesGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    padding: 10px 0 30px;
+    gap: 12px;
+    padding: 6px 0 8px;
   }
 
   .gameCard {
     background: linear-gradient(145deg, #111, #1a1a2e);
     border: 2px solid #333;
     border-radius: 12px;
-    padding: 18px 10px 14px;
+    padding: 12px 8px 10px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
@@ -148,8 +149,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    min-height: 160px;
+    gap: 6px;
+    min-height: 120px;
     text-decoration: none;
     color: inherit;
   }
@@ -181,13 +182,13 @@
   }
 
   .gameCard .iconWrap {
-    width: 72px;
-    height: 72px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 34px;
+    font-size: 24px;
     background: linear-gradient(135deg, #1a1a3e, #0a0a1e);
     border: 2px solid #444;
     position: relative;
@@ -247,15 +248,15 @@
   /* Footer */
   #hubFooter {
     text-align: center;
-    padding: 20px 10px;
+    padding: 10px 10px 8px;
     border-top: 2px solid #333;
-    margin-top: 10px;
+    margin-top: 6px;
   }
 
   #hubFooter p {
-    font-size: 7px;
+    font-size: 6px;
     color: #666;
-    line-height: 2;
+    line-height: 1.6;
   }
 
   #hubFooter .highlight {
@@ -272,8 +273,8 @@
   .arcadeLights {
     display: flex;
     justify-content: center;
-    gap: 8px;
-    margin: 6px 0;
+    gap: 6px;
+    margin: 4px 0;
   }
 
   .arcadeLights span {
@@ -455,20 +456,20 @@
 
   /* Responsive */
   @media (max-width: 700px) {
-    #gamesGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    #gamesGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     #hubTitle { font-size: 20px; letter-spacing: 4px; }
     #hubLogo img { width: 40px; height: 40px; }
-    #hubHeader { padding: 20px 10px 15px; }
-    .gameCard { min-height: 140px; padding: 14px 8px 10px; }
-    .gameCard .iconWrap { width: 60px; height: 60px; font-size: 28px; }
+    #hubHeader { padding: 16px 10px 10px; }
+    .gameCard { min-height: 110px; padding: 10px 6px 8px; gap: 5px; }
+    .gameCard .iconWrap { width: 46px; height: 46px; font-size: 20px; }
   }
 
   @media (max-width: 400px) {
-    #hub { padding: 10px; }
-    #hubTitle { font-size: 16px; }
-    .gameCard { min-height: 120px; }
-    .gameCard .iconWrap { width: 50px; height: 50px; font-size: 22px; }
-    .gameCard .gameTitle { font-size: 7px; }
+    #hub { padding: 8px; }
+    #hubTitle { font-size: 14px; }
+    .gameCard { min-height: 100px; padding: 8px 4px 6px; gap: 4px; }
+    .gameCard .iconWrap { width: 40px; height: 40px; font-size: 18px; }
+    .gameCard .gameTitle { font-size: 6px; }
   }
 </style>
 </head>
